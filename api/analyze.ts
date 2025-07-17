@@ -27,7 +27,7 @@ export default async function handler(req: any, res: any) {
         }
 
         const ai = new GoogleGenAI({
-            apiKey: process.env.API_KEY,
+            apiKey: process.env.AIzaSyA2ZP6K0SMi8iUHhYFtNzuwAlPx_3icS_c,
         });
 
         const systemInstruction = `Você é um assistente de análise de dados para um sistema de gestão chamado Infoco.
