@@ -22,7 +22,7 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ error: 'Faltando userInput ou contextData no corpo da requisição' });
         }
         
-        if (!process.env.API_KEY) {
+        if (!process.env.AIzaSyA2ZP6K0SMi8iUHhYFtNzuwAlPx_3icS_c) {
             return res.status(500).json({ error: 'A chave da API não está configurada no servidor.' });
         }
 
