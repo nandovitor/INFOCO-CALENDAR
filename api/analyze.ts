@@ -29,8 +29,12 @@ export default async function handler(req: any, res: any) {
         
         const apiKey = process.env.API_KEY;
         if (!apiKey) {
-            console.error("Server Configuration Error: API_KEY environment variable is not set or not accessible in the production environment.");
-            return res.status(500).json({ error: 'A chave da API não está configurada no servidor. Verifique as variáveis de ambiente no painel da Vercel para o ambiente de Produção.' });
+            const env = process.env.VERCEL_ENV || 'desconhecido';
+            const errorMessage = `A chave da API (API_KEY) não foi encontrada no ambiente '${env}'. Por favor, verifique se a variável de ambiente 'API_KEY' está corretamente configurada nas configurações do projeto Vercel para este ambiente específico. É crucial fazer um novo deploy após adicionar a variável para que a alteração tenha efeito.`;
+            
+            console.error(`Server Configuration Error: API_KEY is not set in the '${env}' environment.`);
+            
+            return res.status(500).json({ error: errorMessage });
         }
         
         console.log("API_KEY found. Initializing GoogleGenAI client.");
