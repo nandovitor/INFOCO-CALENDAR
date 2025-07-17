@@ -49,19 +49,13 @@ Sempre formate sua resposta usando markdown para melhor legibilidade (use **negr
 Se a pergunta não puder ser respondida com os dados fornecidos, informe educadamente que a informação não está disponível. Não invente informações.
 Seja direto e objetivo na resposta.`;
         
-        const userQueryPart = {
-            text: `**PERGUNTA DO USUÁRIO:**\n${userInput}`
-        };
-
-        const dataContextPart = {
-            text: `\n\n---\n\n**DADOS PARA ANÁLISE (JSON):**\n${JSON.stringify(contextData, null, 2)}`
-        };
+        const prompt = `**DADOS PARA ANÁLISE (JSON):**\n${JSON.stringify(contextData, null, 2)}\n\n---\n\n**PERGUNTA DO USUÁRIO:**\n${userInput}`;
         
         console.log("Sending request to Google Gemini API...");
         
         const genAIResponse = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: { parts: [userQueryPart, dataContextPart] },
+            contents: prompt,
             config: {
                 systemInstruction: systemInstruction,
             }
@@ -81,19 +75,26 @@ Seja direto e objetivo na resposta.`;
     } catch (error: any) {
         console.error("--- UNHANDLED ERROR in /api/analyze ---");
         console.error("Error Message:", error.message);
-        if (error.stack) {
-            console.error("Error Stack:", error.stack);
-        }
-        if(error.details) {
-            console.error("Error Details:", error.details);
-        }
+        if (error.stack) console.error("Error Stack:", error.stack);
+        if (error.details) console.error("Error Details:", error.details);
         console.error("--- END OF ERROR ---");
 
-        // Provide a more specific error message if it's a known type
-        if (error.message && error.message.includes('API key not valid')) {
-             return res.status(401).json({ error: 'A chave da API fornecida é inválida.' });
-        }
+        let errorMessage = 'Ocorreu um erro ao processar sua solicitação de IA. Verifique os logs do servidor para detalhes.';
+        let statusCode = 500;
 
-        return res.status(500).json({ error: 'Falha ao processar a solicitação de IA. Verifique os logs do servidor na Vercel para mais detalhes.' });
+        if (error.message) {
+            if (error.message.includes('API key not valid')) {
+                errorMessage = 'A chave da API (API_KEY) fornecida é inválida ou não tem permissão para usar o modelo.';
+                statusCode = 401;
+            } else if (error.message.toLowerCase().includes('deadline')) {
+                 errorMessage = 'A solicitação para o serviço de IA demorou muito para responder (timeout). Tente novamente.';
+                 statusCode = 504;
+            } else {
+                 // Forward a sanitized version of the error message to the client
+                 errorMessage = `Erro do serviço de IA: ${error.message}`;
+            }
+        }
+        
+        return res.status(statusCode).json({ error: errorMessage });
     }
 }
