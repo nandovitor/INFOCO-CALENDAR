@@ -1,4 +1,3 @@
-
 import { Employee, Task, FinanceData } from '../types';
 
 interface AiContextData {
@@ -25,8 +24,17 @@ export const getAiDataAnalysis = async (userInput: string, contextData: AiContex
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Ocorreu um erro desconhecido no servidor.' }));
-            throw new Error(errorData.error || `O servidor respondeu com o status: ${response.status}`);
+            let errorMsg;
+            // Try to parse the error response as JSON. Vercel functions usually return JSON errors.
+            try {
+                const errorData = await response.json();
+                // Use the specific error message from the backend if available.
+                errorMsg = errorData.error || `O servidor respondeu com o status ${response.status}.`;
+            } catch (jsonError) {
+                // If the response is not JSON (e.g., HTML 404 page), use the status text.
+                errorMsg = `Falha na comunicação com o servidor: ${response.status} ${response.statusText}. Verifique se o serviço de backend (API) está em execução.`;
+            }
+            throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -38,7 +46,15 @@ export const getAiDataAnalysis = async (userInput: string, contextData: AiContex
         return data.response;
 
     } catch (error: any) {
-        console.error("Error calling /api/analyze:", error);
-        throw new Error('Falha ao se comunicar com o serviço de IA. Verifique o console para detalhes.');
+        console.error("Erro ao chamar /api/analyze:", error);
+        // Catch specific network errors and provide a helpful message for local development.
+        if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+             throw new Error('Não foi possível conectar ao serviço de IA. Verifique sua conexão e se o servidor está online. Para desenvolvimento local, use o comando `vercel dev`.');
+        }
+        // Re-lança o erro para que o componente da UI possa exibi-lo.
+        // O erro agora deve ter uma mensagem mais descritiva.
+        throw error;
     }
 };
+
+
